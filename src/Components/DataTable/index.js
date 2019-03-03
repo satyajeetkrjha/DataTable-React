@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './datatable.css';
 import ReactDOM from 'react-dom';
-
+import Pagination from '../Pagination';
 class DataTable extends React.Component{
     constructor(props){
         super(props);
@@ -10,11 +10,16 @@ class DataTable extends React.Component{
             data:props.data,
             sortBy:null,
             descending:null,
-            search:false
+            search:false,
+            pageLength: this.props.pagination.pageLength || 5,
+            currentPage:1
         }
         this.keyField=props.keyField || "id";
         this.noData=props.noData || "No Records Found";
         this.width=props.width ||  "100%";
+
+        //Add pagination support
+        this.pagination = this.props.pagination || {};
     }
     onDragOver = (e) => {
         e.preventDefault();
@@ -22,20 +27,22 @@ class DataTable extends React.Component{
 
     onDragStart = (e, source) => {
 
-
+        console.log('source',source);
         e.dataTransfer.setData('text/plain', source);
+        console.log('e',e);
     }
     onDrop = (e, target) => {
         e.preventDefault();
         let source = e.dataTransfer.getData('text/plain');
         let headers = [...this.state.headers];
-        let srcHeader = headers[source];
-        console.log('headers',headers);
+
+        let srcHeader =  headers[source];
         let targetHeader = headers[target];
 
         let temp = srcHeader.index;
         srcHeader.index = targetHeader.index;
         targetHeader.index = temp;
+
 
         this.setState({
             headers
@@ -116,9 +123,12 @@ class DataTable extends React.Component{
     }
     renderContent = () => {
         let { headers } = this.state;
-        let data = this.pagination ? this.state.pagedData
-            : this.state.data;
+        let data =  this.state.data;
 
+        console.log('God',this.pagination);
+        console.log('God1',this.state.pagedData);
+        console.log('God2',this.state.data);
+        console.log('God4',data);
         let contentView = data.map((row, rowIdx) => {
             let id = row[this.keyField];
             let edit = this.state.edit;
@@ -166,20 +176,71 @@ class DataTable extends React.Component{
         });
         return contentView;
     }
+    onSearch = (e) => {
+        let { headers } = this.state;
+        // Grab the index of the target column
+        let idx = e.target.dataset.idx;
+
+        // Get the target column
+        let targetCol = this.state.headers[idx].accessor;
+
+        let data = this._preSearchData;
+
+        // Filter the records
+        let searchData = this._preSearchData.filter((row) => {
+            let show = true;
+
+            for (let i = 0; i < headers.length; i++) {
+                let fieldName = headers[i].accessor;
+                let fieldValue = row[fieldName];
+                let inputId = 'inp' + fieldName;
+                let input = this[inputId];
+                if (!fieldValue === '') {
+                    show = true;
+                } else {
+                    show = fieldValue.toString().toLowerCase().indexOf(input.value.toLowerCase()) > -1;
+                    if (!show) break;
+                }
+            }
+            return show;
+            //return row[targetCol].toString().toLowerCase().indexOf(needle) > -1;
+        });
+
+        // UPdate the state
+        this.setState({
+            data: searchData,
+            pagedData: searchData,
+            totalRecords: searchData.length
+        }, () => {
+            // if (this.pagination.enabled) {
+            //     this.onGotoPage(1);
+            // }
+        });
+    }
+
     renderSearch =()=>{
         let {search,headers}= this.state;
         if(!search) return null;
 
         let searchInputs = headers.map(( header,idx)=>{
             let hdr = this[header.accessor];
+            let inputId = 'inp'+ header.accessor;
+
             return(
                 <td key={idx}>
-                 <input type="text" data-idx={idx}/>
+                 <input
+                    ref={(input) => this[inputId] = input}
+                    type="text"
+                    data-idx={idx}
+                    style={{
+                        width:hdr.clientWidth -17 +"px"
+                    }}
+                    />
                 </td>
             )
         });
         return(
-           <tr>
+           <tr onChange= {this.onSearch}>
               {searchInputs}
            </tr>
 
@@ -237,6 +298,15 @@ class DataTable extends React.Component{
     render(){
         return(
           <div className={this.props.className}>
+            {this.pagination.enabled  &&
+                <Pagination
+                  type ={this.props.pagination.type}
+                  totalRecords ={this.state.data.length}
+                  pageLength ={this.state.pageLength}
+
+                 />
+            }
+            <br></br>
              {this.renderToolBar()}
              {this.renderTable()}
           </div>
