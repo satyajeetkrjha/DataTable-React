@@ -51,7 +51,7 @@ class App extends Component {
      this.state = model;
    }
   render() {
-      console.log('log',this.state);
+
     return (
       <div className="App">
       <DataTable className="data-table"

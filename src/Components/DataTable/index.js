@@ -12,7 +12,8 @@ class DataTable extends React.Component{
             descending:null,
             search:false,
             pageLength: this.props.pagination.pageLength || 5,
-            currentPage:1
+            currentPage:2,
+            pagedData:props.data
         }
         this.keyField=props.keyField || "id";
         this.noData=props.noData || "No Records Found";
@@ -26,10 +27,8 @@ class DataTable extends React.Component{
     }
 
     onDragStart = (e, source) => {
-
-        console.log('source',source);
         e.dataTransfer.setData('text/plain', source);
-        console.log('e',e);
+
     }
     onDrop = (e, target) => {
         e.preventDefault();
@@ -123,12 +122,8 @@ class DataTable extends React.Component{
     }
     renderContent = () => {
         let { headers } = this.state;
-        let data =  this.state.data;
+        let data = this.pagination ?this.state.pagedData : this.state.data;
 
-        console.log('God',this.pagination);
-        console.log('God1',this.state.pagedData);
-        console.log('God2',this.state.data);
-        console.log('God4',data);
         let contentView = data.map((row, rowIdx) => {
             let id = row[this.keyField];
             let edit = this.state.edit;
@@ -257,7 +252,7 @@ class DataTable extends React.Component{
         return(
             <table className="data-inner-table">
                <caption className="data-table-caption">
-                 {title}
+                 {title}onGotoPage
                </caption>
                <thead onClick ={this.onSort}>
                     <tr>
@@ -295,6 +290,33 @@ class DataTable extends React.Component{
             </div>
         );
     }
+    getPagedData =(pageNo,pageLength)=>{
+        let startOfRecord = (pageNo - 1) * pageLength;// from 20
+        console.log('startOfRecord',startOfRecord);// to 25
+        let endOfRecord = startOfRecord + pageLength;
+        console.log('endOfRecord',endOfRecord);
+
+        let data = this.state.data;
+        let pagedData = data.slice(startOfRecord, endOfRecord);// get only the relevant data out of all datacol
+
+        return pagedData;
+    }
+    onPageLengthChange =(pageLength)=>{
+
+        this.setState({
+            pageLength: parseInt(pageLength,10)
+        },()=>{
+            this.onGotoPage(this.state.currentPage);
+        })
+
+    }
+    onGotoPage =(pageNo)=>{
+        let pagedData = this.getPagedData(pageNo, this.state.pageLength);
+         this.setState({
+             pagedData: pagedData,
+             currentPage: pageNo
+         });
+    }
     render(){
         return(
           <div className={this.props.className}>
@@ -303,6 +325,9 @@ class DataTable extends React.Component{
                   type ={this.props.pagination.type}
                   totalRecords ={this.state.data.length}
                   pageLength ={this.state.pageLength}
+                  onPageLengthChange ={this.onPageLengthChange}
+                  onGotoPage={this.onGotoPage}
+                  currentPage={this.state.currentPage}
 
                  />
             }
