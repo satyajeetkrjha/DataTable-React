@@ -22,6 +22,11 @@ class DataTable extends React.Component{
         //Add pagination support
         this.pagination = this.props.pagination || {};
     }
+    componentDidMount(){
+        if(this.pagination.enabled){
+            this.onGotoPage(this.state.currentPage);
+        }
+    }
     onDragOver = (e) => {
         e.preventDefault();
     }
@@ -116,6 +121,8 @@ class DataTable extends React.Component{
               data,
               sortBy:colIndex,
               descending
+          } ,()=>{
+              this.onGotoPage(this.state.currentPage);
           });
 
 
@@ -207,9 +214,9 @@ class DataTable extends React.Component{
             pagedData: searchData,
             totalRecords: searchData.length
         }, () => {
-            // if (this.pagination.enabled) {
-            //     this.onGotoPage(1);
-            // }
+            if (this.pagination.enabled) {
+                this.onGotoPage(1);
+            }
         });
     }
 
